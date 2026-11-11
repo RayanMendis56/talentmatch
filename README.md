@@ -95,7 +95,7 @@ Inferred values:
 | 47576 | Housekeeping Cleaner | 1 |
 
 ### Stage 1: Shortlist (fast, free)
-BM25 over all 472 CVs for each job. The query is the job title (weight 3), required skills (2) and description (1); a candidate's document is their current title (repeated for weight), past role titles, skills and full CV text. A boost is added when the job-title words appear in the candidate's current title or past titles. `MATCH_TOP_N` controls the shortlist (default 40). In the submitted results, Cashier was run with 40, Healthcare had 35 successful judgments from its 40-candidate shortlist, and the other eight jobs were run with `MATCH_TOP_N=30` and `MATCH_BATCH_SIZE=10` to conserve free-tier quota.
+BM25 over all 472 CVs for each job. The query is the job title (weight 3), required skills (2) and description (1); a candidate's document is their current title (repeated for weight), past role titles, skills and full CV text. A boost is added when the job-title words appear in the candidate's current title or past titles. `MATCH_TOP_N` controls the shortlist (default 40). In the submitted results, the first two jobs used a top-40 shortlist (Healthcare persisted 35 successful judgments and Cashier 40); the remaining eight used a top-30 shortlist with `MATCH_BATCH_SIZE=10` to conserve free-tier quota.
 
 ### Stage 2: LLM judgments
 Candidates are sent in configurable batches (default 5; the eight quota-constrained runs used 10) with their title, years, skills and CV text. For each one the model returns, as strict JSON:
