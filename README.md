@@ -2,7 +2,7 @@
 
 A small recruitment app where an AI matching agent ranks candidate CVs against 10 job descriptions. Each candidate gets a score out of 100 (skills 50 · experience 30 · designation 20) and a specific one-line reason. A recruiter opens a job and sees every shortlisted candidate ranked by fit.
 
-- **Live app:** TODO: https://talentmatch-ebon.vercel.app
+- **Live app:** https://talentmatch-ebon.vercel.app
 - **Repository:** https://github.com/RayanMendis56/talentmatch
 - **Matching results:** [`results/top10.csv`](results/top10.csv)
 
@@ -66,7 +66,7 @@ I used **plain parsing with regular expressions, with no LLM**, so extraction is
 - **Skills:** the skills-type sections, with `Category:` prefixes removed and lists split on commas, semicolons and bullets.
 - **Missing details** stay empty (shown as "not found in CV"); nothing is invented.
 
-**Verification:** the import has a `--dry` mode. After parsing, every extracted designation and company was checked automatically to appear verbatim in its CV text (472 of 472), no required field was empty, and I compared random profiles against the raw files by hand. Overlap merging is covered by a small test (two overlapping 24-month roles count as 36 months, not 48).
+**Verification:** the import has a `--dry` mode that reports missing fields and prints eight sample profiles for manual comparison with the raw CV files. I also checked that extracted designations and companies appeared in their CV text and reviewed sample profiles by hand. There is no automated test suite in this repository.
 
 Jobs: the title is the first line (job 46795 has none, so it is read from "We are seeking a … to join"), and required skills are the bullets under `Required Skills` / `About Required Skills`.
 
@@ -81,13 +81,24 @@ Jobs do not state years. One LLM call per job estimates the minimum years a hiri
 
 Inferred values:
 
-TODO: paste the output of `select id, title, expected_years from jobs;` as a table
+| Job ID | Title | Expected years |
+|---|---|---:|
+| 29243 | Healthcare Data Analyst | 2 |
+| 32447 | Senior Mechanical/HVAC Engineer | 7 |
+| 35129 | IELTS Teacher | 3 |
+| 36044 | Failure Analysis Engineer | 3 |
+| 37020 | Regional Facilities Manager | 6 |
+| 38671 | Retail Mortgage Loan Closer | 3 |
+| 39060 | Sales Director, ProductFE | 10 |
+| 44719 | Cashier | 1 |
+| 46795 | Paralegal, Privacy and Information Management | 3 |
+| 47576 | Housekeeping Cleaner | 1 |
 
 ### Stage 1: Shortlist (fast, free)
-BM25 over all 472 CVs for each job. The query is the job title (weight 3), required skills (2) and description (1); a candidate's document is their current title (repeated for weight), past role titles, skills and full CV text. A boost is added when the job-title words appear in the candidate's current title or past titles. The **top 40** per job go to Stage 2.
+BM25 over all 472 CVs for each job. The query is the job title (weight 3), required skills (2) and description (1); a candidate's document is their current title (repeated for weight), past role titles, skills and full CV text. A boost is added when the job-title words appear in the candidate's current title or past titles. `MATCH_TOP_N` controls the shortlist (default 40). In the submitted results, Cashier was run with 40, Healthcare had 35 successful judgments from its 40-candidate shortlist, and the other eight jobs were run with `MATCH_TOP_N=30` and `MATCH_BATCH_SIZE=10` to conserve free-tier quota.
 
 ### Stage 2: LLM judgments
-Candidates are sent in batches of 5 with their title, years, skills and CV text. For each one the model returns, as strict JSON:
+Candidates are sent in configurable batches (default 5; the eight quota-constrained runs used 10) with their title, years, skills and CV text. For each one the model returns, as strict JSON:
 - `matched_skills`: which of the job's required skills the candidate demonstrates in their skills list **or** work history. Equivalent wording counts ("POS Systems Operation" ≈ "operated the cash register"; "ETL" ≈ "Extract, Transform, Load"), but only with evidence in the CV.
 - `designation_tier`: `same`, `related` or `unrelated`, comparing the current title with the job title.
 - `note`: a short factual phrase on the strongest evidence or main gap.
@@ -127,7 +138,7 @@ Candidates outside the shortlist are not scored. IELTS Teacher is a weak fit: no
 
 ## AI tools and APIs used
 
-- **Google Gemini API** (free tier) for the matching judgments and expected-years inference.
+- **Google Gemini API** for matching judgments and expected-years inference. The eight remaining jobs were successfully run with `gemini-3.5-flash-lite`, which is also the code default. Earlier, `gemini-2.5-flash` was unavailable and `gemini-3.8-flash` hit its daily free-tier quota.
 - **Claude** (Anthropic) as an AI coding assistant while building the parsers, scoring logic and UI. I reviewed and tested the generated code and can explain every part.
 - **Neon** (PostgreSQL) for the hosted database and **Vercel** for hosting.
 
@@ -136,15 +147,17 @@ Candidates outside the shortlist are not scored. IELTS Teacher is a weak fit: no
 ## Extras
 
 - **Deterministic number-crunching:** the LLM only judges; code computes scores, so rules are verifiable.
-- **Resumable matching** (`--missing`) and **atomic result replacement.**
+- **Resumable matching** (`--missing` skips jobs that already have saved results) and **atomic result replacement** (a failed run keeps the prior job results).
 - **Re-run cooldown** (2 minutes per job) to protect the free LLM quota.
 - **Import dry-run** with a data-quality report.
 - Candidate search across skills and CV IDs.
+- Designation-tier consistency by title; `npm run normalize -- --dry` previews repairs to saved matches and `npm run normalize` applies them without LLM calls.
 
 ## Known limitations
 
 - The designation tier is an LLM judgment and can occasionally be debatable for borderline "related" roles. Within each job, candidates with the same normalized current title use the majority tier; ties use the lower tier. `npm run normalize -- --dry` previews this repair for saved results, and `npm run normalize` applies it without LLM calls.
-- Only the shortlisted 40 candidates per job are scored; a strong candidate with unusual wording could, in principle, fall outside the shortlist.
+- Only shortlisted candidates are scored (default 40; 30 for eight of the submitted jobs); a strong candidate with unusual wording could, in principle, fall outside the shortlist.
+- The source corpus contains near-duplicate CVs. They remain separate candidate IDs and can therefore occupy multiple top-ten positions.
 - The CV parser is tuned to the layouts found in this dataset; very different layouts would need new patterns.
 - On Vercel's free plan, a function time limit may stop the in-app **Re-run matching** for slow runs; the script (`npm run match -- <jobId>`) is the fallback.
 
