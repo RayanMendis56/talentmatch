@@ -10,6 +10,7 @@
     "import": "tsx scripts/import.ts",
     "match": "tsx scripts/match.ts",
     "export": "tsx scripts/export-top10.ts",
+    "normalize": "tsx scripts/normalize-designations.ts",
     "db:migrate": "tsx scripts/migrate.ts"
   },
   "dependencies": {

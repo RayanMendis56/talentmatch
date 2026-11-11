@@ -2,6 +2,7 @@ import type { Pool } from "pg";
 import { Doc, shortlist } from "./bm25";
 import { CandidateForLlm } from "./llm";
 import { computeScore, Judgment, ScoreResult } from "./scoring";
+import { harmonizeTiers, normTitle } from "./tiers";
 
 export interface LlmApi {
   inferExpectedYears(job: { title: string; description: string }): Promise<number>;
@@ -88,6 +89,17 @@ export async function matchJob(pool: Pool, llm: LlmApi, jobId: string, opts: Mat
     throw new Error(
       `LLM scoring failed for ${failed.length}/${hits.length} candidates (likely quota or rate limit); old results were kept.`
     );
+  }
+
+  const tierByTitle = harmonizeTiers(
+    [...judgments.entries()].map(([candidateId, judgment]) => ({
+      designation: byId.get(candidateId)?.current_designation ?? null,
+      tier: judgment.designation_tier,
+    }))
+  );
+  for (const [candidateId, judgment] of judgments) {
+    const tier = tierByTitle.get(normTitle(byId.get(candidateId)?.current_designation));
+    if (tier) judgment.designation_tier = tier;
   }
 
   // numbers come from code, not the LLM

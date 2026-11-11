@@ -48,6 +48,8 @@ The provided data folders are **not** committed. Point `DATA_DIR` at them and ru
 | `npm run match -- 44719` | Match a single job |
 | `npm run match -- --missing` | Match only jobs that have no saved results (resume after an interruption) |
 | `npm run export` | Regenerate `results/top10.csv` from the database |
+| `npm run normalize -- --dry` | Preview consistent designation tiers for saved matches |
+| `npm run normalize` | Apply consistent designation tiers and re-rank saved matches (no LLM calls) |
 
 ---
 
@@ -104,10 +106,10 @@ The **reason** is assembled from the verified facts plus the model's note, so it
 *"Has 4 of 5 required skills (missing: Shelf Restocking); 8.3 yrs experience meets the ~1 expected; current title "Cashier" is the same or a very similar role."*
 
 ### Saved results
-For each job, all 40 shortlisted candidates are scored and stored in the `matches` table with the total, the three factor scores, matched and missing skills, the reason and the rank (so well beyond the required top 10). Results for a job are replaced in a single transaction, so a failed run never wipes good data. Pages read from the database and never re-score on load.
+For each job, candidates with successful judgments from the configured shortlist are stored in the `matches` table with the total, the three factor scores, matched and missing skills, the reason and the rank (so well beyond the required top 10). If more than 20% of judgments fail, the old results are kept; otherwise, results are replaced in a single transaction. Pages read from the database and never re-score on load.
 
 ### Weak fits score low
-Candidates outside the shortlist are not scored. For jobs with no real fits (for example IELTS Teacher: no CV mentions IELTS) the best candidates simply receive low totals. Scores are not forced upward.
+Candidates outside the shortlist are not scored. IELTS Teacher is a weak fit: no CV mentions IELTS, and the leading candidates' scores come from generic teaching skills rather than IELTS-specific evidence. The IELTS requirement appears as missing, and scores are not forced upward.
 
 ---
 
@@ -141,7 +143,7 @@ Candidates outside the shortlist are not scored. For jobs with no real fits (for
 
 ## Known limitations
 
-- The designation tier is an LLM judgment and can occasionally be debatable for borderline "related" roles.
+- The designation tier is an LLM judgment and can occasionally be debatable for borderline "related" roles. Within each job, candidates with the same normalized current title use the majority tier; ties use the lower tier. `npm run normalize -- --dry` previews this repair for saved results, and `npm run normalize` applies it without LLM calls.
 - Only the shortlisted 40 candidates per job are scored; a strong candidate with unusual wording could, in principle, fall outside the shortlist.
 - The CV parser is tuned to the layouts found in this dataset; very different layouts would need new patterns.
 - On Vercel's free plan, a function time limit may stop the in-app **Re-run matching** for slow runs; the script (`npm run match -- <jobId>`) is the fallback.
