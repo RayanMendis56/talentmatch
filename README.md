@@ -44,7 +44,7 @@ The provided data folders are **not** committed. Keep them outside the repositor
 |---|---|
 | `npm run import -- --dry` | Parse only, no database writes: prints a report and 8 random profiles to check by hand |
 | `npm run import -- --dry --limit 20` | Preview the first 20 CVs in sorted filename order and all job files |
-| `npm run import -- --limit 20` | Import only the first 20 CVs in sorted filename order, but all job files |
+| `npm run import -- --limit 20` | Upsert the first 20 CVs in sorted filename order and all job files; does not delete previously imported candidates |
 | `npm run import` | Parse and upsert jobs and candidates (safe to re-run) |
 | `npm run match` | Match all jobs |
 | `npm run match -- 44719` | Match a single job |
@@ -70,7 +70,7 @@ I used **plain parsing with regular expressions, with no LLM**, so extraction is
 
 **Verification:** the import has a `--dry` mode that reports missing fields and prints eight sample profiles for manual comparison with the raw CV files. I also checked that extracted designations and companies appeared in their CV text and reviewed sample profiles by hand. There is no automated test suite in this repository.
 
-To try a smaller import, use `--limit N`. It selects the first N CV filenames in sorted order and still imports all job files; `--dry` previews the parse without writing. For example, `npm run import -- --dry --limit 20` previews 20 CVs. The submitted run used all 472 CVs, with IDs taken from their filenames rather than choosing a hand-picked ID list.
+To try a smaller import, use `--limit N`. It selects the first N CV filenames in sorted order and still imports all job files; `--dry` previews the parse without writing. For example, `npm run import -- --dry --limit 20` previews 20 CVs. Import is an upsert and does not remove existing rows, so use an empty database if you want it to contain only that smaller subset. The submitted run used all 472 CVs, with IDs taken from their filenames rather than choosing a hand-picked ID list.
 
 Jobs: the title is the first line (job 46795 has none, so it is read from "We are seeking a … to join"), and required skills are the bullets under `Required Skills` / `About Required Skills`.
 
