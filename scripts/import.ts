@@ -9,18 +9,37 @@ import { parseJob } from "../src/lib/parseJob";
 // Usage:
 //   npm run import            -> parse and write to the database
 //   npm run import -- --dry   -> parse only, print a report + sample profiles to verify by hand
-const DRY = process.argv.includes("--dry");
+//   npm run import -- --limit 20 -> import 20 candidates (all jobs)
+const args = process.argv.slice(2);
+const DRY = args.includes("--dry");
+const limitIndexes = args.flatMap((arg, index) => (arg === "--limit" ? [index] : []));
+if (limitIndexes.length > 1) throw new Error("Specify --limit only once");
+const limitIndex = limitIndexes[0];
+let candidateLimit: number | undefined;
+if (limitIndex !== undefined) {
+  const value = args[limitIndex + 1];
+  if (!value || value.startsWith("--")) throw new Error("--limit requires a positive integer");
+  candidateLimit = Number(value);
+  if (!Number.isSafeInteger(candidateLimit) || candidateLimit < 1) {
+    throw new Error("--limit requires a positive integer");
+  }
+}
 const DATA_DIR = process.env.DATA_DIR;
 if (!DATA_DIR) throw new Error("Set DATA_DIR in .env.local (folder containing corpus/ and queries/)");
 
-const readDir = (sub: string) =>
-  fs
+const readDir = (sub: string, limit?: number) => {
+  const files = fs
     .readdirSync(path.join(DATA_DIR, sub))
     .filter((f) => !f.startsWith("."))
-    .map((id) => ({ id, text: fs.readFileSync(path.join(DATA_DIR, sub, id), "utf8") }));
+    .sort();
+  return (limit === undefined ? files : files.slice(0, limit)).map((id) => ({
+    id,
+    text: fs.readFileSync(path.join(DATA_DIR, sub, id), "utf8"),
+  }));
+};
 
 async function main() {
-  const candidates = readDir("corpus").map((f) => parseCv(f.id, f.text));
+  const candidates = readDir("corpus", candidateLimit).map((f) => parseCv(f.id, f.text));
   const jobs = readDir("queries").map((f) => parseJob(f.id, f.text));
 
   // ---- report ----

@@ -36,13 +36,15 @@ npm run dev                     # http://localhost:3000
 | `MATCH_BATCH_SIZE` | Candidates judged per LLM call (default 5) |
 | `DATA_DIR` | Local folder that contains `corpus/` and `queries/` (import only) |
 
-The provided data folders are **not** committed. Point `DATA_DIR` at them and run the import.
+The provided data folders are **not** committed. Keep them outside the repository, for example in `~/talentmatch-data/corpus/` and `~/talentmatch-data/queries/`, and set `DATA_DIR` in `.env.local` to the absolute path of `~/talentmatch-data`. The import script loads `.env.local` itself. The full import reads all 472 CV files and all 10 job files. Candidate IDs are the CV filenames; no candidate subset was selected for the submitted matching run.
 
 ### Useful commands
 
 | Command | What it does |
 |---|---|
 | `npm run import -- --dry` | Parse only, no database writes: prints a report and 8 random profiles to check by hand |
+| `npm run import -- --dry --limit 20` | Preview the first 20 CVs in sorted filename order and all job files |
+| `npm run import -- --limit 20` | Import only the first 20 CVs in sorted filename order, but all job files |
 | `npm run import` | Parse and upsert jobs and candidates (safe to re-run) |
 | `npm run match` | Match all jobs |
 | `npm run match -- 44719` | Match a single job |
@@ -67,6 +69,8 @@ I used **plain parsing with regular expressions, with no LLM**, so extraction is
 - **Missing details** stay empty (shown as "not found in CV"); nothing is invented.
 
 **Verification:** the import has a `--dry` mode that reports missing fields and prints eight sample profiles for manual comparison with the raw CV files. I also checked that extracted designations and companies appeared in their CV text and reviewed sample profiles by hand. There is no automated test suite in this repository.
+
+To try a smaller import, use `--limit N`. It selects the first N CV filenames in sorted order and still imports all job files; `--dry` previews the parse without writing. For example, `npm run import -- --dry --limit 20` previews 20 CVs. The submitted run used all 472 CVs, with IDs taken from their filenames rather than choosing a hand-picked ID list.
 
 Jobs: the title is the first line (job 46795 has none, so it is read from "We are seeking a … to join"), and required skills are the bullets under `Required Skills` / `About Required Skills`.
 
