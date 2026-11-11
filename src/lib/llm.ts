@@ -8,8 +8,10 @@ function client() {
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new Error("GEMINI_API_KEY is not set");
   return new GoogleGenerativeAI(key).getGenerativeModel({
-    model: process.env.GEMINI_MODEL || "gemini-3.8-flash",
+    model: process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
     generationConfig: { responseMimeType: "application/json", temperature: 0 },
+  }, {
+    timeout: 60_000,
   });
 }
 
@@ -31,6 +33,8 @@ export async function callJson<T>(prompt: string, retries = 5): Promise<T> {
     } catch (e: unknown) {
       lastErr = e;
       const msg = String((e as Error)?.message ?? e);
+      console.warn(`LLM attempt ${attempt + 1} failed: ${msg.slice(0, 300)}`);
+      if (/PerDay|per day|daily/i.test(msg)) break;
       const retryable =
         e instanceof SyntaxError ||
         /\b(?:429|500|502|503|504)\b/.test(msg) ||

@@ -25,7 +25,11 @@ async function main() {
     let failed = false;
     for (const id of jobIds) {
       try {
-        const s = await matchJob(pool, { inferExpectedYears, scoreBatch }, id, { onProgress: console.log });
+        const s = await matchJob(pool, { inferExpectedYears, scoreBatch }, id, {
+          onProgress: console.log,
+          topN: Number(process.env.MATCH_TOP_N ?? 40),
+          batchSize: Number(process.env.MATCH_BATCH_SIZE ?? 5),
+        });
         console.log("DONE", s);
       } catch (e) {
         failed = true;

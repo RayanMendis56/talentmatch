@@ -84,6 +84,11 @@ export async function matchJob(pool: Pool, llm: LlmApi, jobId: string, opts: Mat
   }
   for (const h of hits) if (!judgments.has(h.id)) failed.push(h.id);
   if (!judgments.size) throw new Error("LLM scoring failed for every candidate; old results were kept.");
+  if (failed.length > hits.length * 0.2) {
+    throw new Error(
+      `LLM scoring failed for ${failed.length}/${hits.length} candidates (likely quota or rate limit); old results were kept.`
+    );
+  }
 
   // numbers come from code, not the LLM
   const scored: { id: string; bm: number; s: ScoreResult }[] = [];

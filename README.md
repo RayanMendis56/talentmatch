@@ -30,8 +30,10 @@ npm run dev                     # http://localhost:3000
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection string (Neon pooled string works) |
 | `GEMINI_API_KEY` | Google AI Studio key |
-| `GEMINI_MODEL` | Gemini model name, e.g. `gemini-2.5-flash` |
+| `GEMINI_MODEL` | Gemini model name (default `gemini-3.5-flash-lite`) |
 | `LLM_MIN_GAP_MS` | Minimum delay between LLM calls, to respect free-tier rate limits (default 4500) |
+| `MATCH_TOP_N` | Candidate shortlist size per job (default 40) |
+| `MATCH_BATCH_SIZE` | Candidates judged per LLM call (default 5) |
 | `DATA_DIR` | Local folder that contains `corpus/` and `queries/` (import only) |
 
 The provided data folders are **not** committed. Point `DATA_DIR` at them and run the import.
