@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "import": "tsx scripts/import.ts",
+    "match": "tsx scripts/match.ts",
+    "export": "tsx scripts/export-top10.ts",
     "db:migrate": "tsx scripts/migrate.ts"
   },
   "dependencies": {
