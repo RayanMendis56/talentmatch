@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "import": "tsx scripts/import.ts",
     "db:migrate": "tsx scripts/migrate.ts"
   },
   "dependencies": {
