@@ -2,7 +2,7 @@
 
 A small recruitment app where an AI matching agent ranks candidate CVs against 10 job descriptions. Each candidate gets a score out of 100 (skills 50 · experience 30 · designation 20) and a specific one-line reason. A recruiter opens a job and sees every shortlisted candidate ranked by fit.
 
-- **Live app:** TODO: paste the Vercel link
+- **Live app:** TODO: https://talentmatch-ebon.vercel.app
 - **Repository:** https://github.com/RayanMendis56/talentmatch
 - **Matching results:** [`results/top10.csv`](results/top10.csv)
 
